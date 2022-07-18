@@ -1,7 +1,10 @@
 const axios = require('axios').default;
 const config = require('./config.json');
-const parsed = new Map();
-let users = new Map();
+const { writeFileSync } = require('node:fs');
+const { resolve } = require( 'node:path' );
+
+// Setup map for all users found commits
+let userCommits = new Map();
 
 // set a date for going back a cetain amount of daysin commit log
 let dateToSearch = new Date();
@@ -22,9 +25,8 @@ async function getCommits() {
         if(response.data.length > 0 && response.data) {
             response.data.map(set => {
                 if(!set.commit.author.name.includes('github-actions')){
-                    // console.log(set.commit.author.name)
-                    let user = users.get(set.commit.author.name)
-                    users.set(set.commit.author.name, user ? [...user, set] : [set])
+                    let user = userCommits.get(set.commit.author.name)
+                    userCommits.set(set.commit.author.name, user ? [...user, set] : [set])
                 }
             })
             return;
@@ -36,5 +38,23 @@ async function getCommits() {
 
 (async () => {
     await getCommits();
-    for (const [user, commits] of users) console.log(`${user} made ${commits.length} commit(s) since ${new Date(dateToSearch).toLocaleString()}`)
+    // console.log(userCommits)
+    let links = new Map();
+    let result = [];
+    for (const [user, commits] of userCommits) {
+        // for(const _commit of commits){
+        //     console.log(user, _commit.html_url)
+        // }
+        // console.log('\n--------------------------------------------------')
+        // console.log(`${user} made ${commits.length} commit(s) in the last ${config.daysBack} day(s)`)
+        // console.log(`Link(s): ${commits.map(s => s.sha.substr(0, 7) ).join(' | ')}`)
+        // console.log('--------------------------------------------------')
+        result.push({user, commits: commits.map(s => s.commit.message.replace(/(\r\n\r\n|\r\n|\n\n|\n)/gm, ' | '))})
+    }
+    setTimeout(() => {
+        console.log(result)
+        writeFileSync('results.json', result)
+    }, 2000)
+
 })()
+
