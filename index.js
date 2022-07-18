@@ -54,6 +54,7 @@ async function getCommits() {
     setTimeout(() => {
         console.log(result)
         writeFileSync('results.json', JSON.stringify(result, null, 2))
+        process.exit(1)
     }, 2000)
 
 })()
