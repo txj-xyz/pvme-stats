@@ -1,7 +1,15 @@
 const axios = require('axios').default;
-const config = require('./config.json');
-const { writeFileSync } = require('node:fs');
-const { resolve } = require( 'node:path' );
+// const config = require('./config.json') ?? null;
+const { writeFileSync, readFileSync, existsSync } = require('node:fs');
+const { resolve } = require('path')
+const _configExist = existsSync(resolve(process.cwd() + '/config.json')) ? true : false;
+if(!_configExist) {
+    console.log(existsSync(resolve(process.cwd() + '/config.json')))
+    console.log("[ERROR] 'config.json' doesn't exist.", resolve(process.cwd() + '/config.json'), process.cwd())
+    process.exit(1)
+}
+const _import = readFileSync(resolve(process.cwd() + '/config.json'));
+const config = JSON.parse(_import);
 
 // Setup map for all users found commits
 let userCommits = new Map();
@@ -29,31 +37,32 @@ async function getCommits() {
                     userCommits.set(set.commit.author.name, user ? [...user, set] : [set])
                 }
             })
-            return;
+            return true;
         }
     } catch (error) {
         console.log('[ERROR]', error.response?.data.message ?? error)
+        return false;
     }
 }
 
 (async () => {
-    await getCommits();
-    // console.log(userCommits)
-    let links = new Map();
+    const _res = await getCommits();
+    if(!_res) return process.exit(1)
     let result = [];
+    console.log(`Time: ${config.daysBack} day(s)`)
+    console.log('\n--------------------------------------------------')
     for (const [user, commits] of userCommits) {
         // for(const _commit of commits){
         //     console.log(user, _commit.html_url)
         // }
-        // console.log('\n--------------------------------------------------')
-        // console.log(`${user} made ${commits.length} commit(s) in the last ${config.daysBack} day(s)`)
-        // console.log(`Link(s): ${commits.map(s => s.sha.substr(0, 7) ).join(' | ')}`)
-        // console.log('--------------------------------------------------')
+        console.log(`${user} made ${commits.length} commit(s)`)
+        console.log(`SHA(s): ${commits.map(s => s.sha.substr(0, 7) ).join(' | ')}`)
+        console.log('--------------------------------------------------')
         result.push({user, commits: commits.map(s => s.commit.message.replace(/(\r\n\r\n|\r\n|\n\n|\n)/gm, ' | '))})
     }
     setTimeout(() => {
         console.log(result)
-        writeFileSync('results.json', JSON.stringify(result, null, 2))
+        writeFileSync(resolve(process.cwd() + '/results.json'), JSON.stringify(result, null, 2))
         process.exit(1)
     }, 2000)
 
