@@ -5,5 +5,8 @@
 ```json
 {
     "token": "GITHUB_PERSONAL_ACCESS_TOKEN",
+    "repo": "pvme-guides",
+    "repoOwner": "pvme",
+    "daysBack": 7
 }
 ```
